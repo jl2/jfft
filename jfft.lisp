@@ -67,27 +67,28 @@
          ;;            17  4  3  2 11 22
          ;;            18  5  0  1 10 21
          ;;            19  6  7  8  9 20))
-         (ri (truncate (* x-count (/ i width))))
-         (ip (j-map-val (mod i (/ height y-count)) (/ height y-count) real-min real-max))
+         (imag-c-idx (truncate (* y-count (/ i height))))
+         (sub-image-height (truncate (/ height y-count)))
+         (imag-value (j-map-val (mod i sub-image-height) sub-image-height real-min real-max))
          )
 
     (dotimes (j width)
       
       (declare (type fixnum j)
-               (type double-float rp))
+               (type double-float imag-value))
       
-      (let* ((rj (truncate (* y-count (/ j height))))
-             (cc (aref cs (+ (* y-count ri) rj)))
-
+      (let* ((real-c-idx (truncate (* x-count (/ j width))))
+             (this-c (aref cs (+ (* x-count imag-c-idx) real-c-idx)))
+             (sub-image-width (truncate (/ width x-count)))
              (iters
-              (do* ((rp (j-map-val (mod j (/ width x-count)) (/ width x-count) imag-min imag-max))
-                    (cp (complex rp ip) (+ (* cp cp) cc))
+              (do* ((real-value (j-map-val (mod j sub-image-width) sub-image-width imag-min imag-max))
+                    (z (complex real-value imag-value) (+ (* z z) this-c))
                     (iter 0 (incf iter)))
-                   ((or (>= iter iterations) (> (abs cp) 4.0)) iter)
+                   ((or (>= iter iterations) (> (abs z) 4.0)) iter)
                 (declare (type fixnum iter)
-                         (type (complex double-float) cp)
+                         (type (complex double-float) z)
                          
-                         (type double-float ip)
+                         (type double-float real-value)
                          (dynamic-extent iter))
                 )))
         (declare (type fixnum iters))
