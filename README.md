@@ -1,1 +1,1 @@
-Julia set fractal package for practice optimizing Common Lisp.
+Fast Fourier Transform visualization using a grid of Julia Sets.

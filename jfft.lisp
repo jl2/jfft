@@ -62,8 +62,13 @@
            (type (simple-array (unsigned-byte 8)) png)
            (type (simple-array (complex double-float)) cs))
   (let* (
+                    
+         ;; (mapping #(16 15 14 13 12 23
+         ;;            17  4  3  2 11 22
+         ;;            18  5  0  1 10 21
+         ;;            19  6  7  8  9 20))
          (ri (truncate (* x-count (/ i width))))
-         (rp (j-map-val (mod i (/ height y-count)) (/ height y-count) real-min real-max))
+         (ip (j-map-val (mod i (/ height y-count)) (/ height y-count) real-min real-max))
          )
 
     (dotimes (j width)
@@ -72,10 +77,10 @@
                (type double-float rp))
       
       (let* ((rj (truncate (* y-count (/ j height))))
-             (cc (aref cs (+ (* x-count rj) ri)))
+             (cc (aref cs (+ (* y-count ri) rj)))
 
              (iters
-              (do* ((ip (j-map-val (mod j (/ width x-count)) (/ width x-count) imag-max imag-min))
+              (do* ((rp (j-map-val (mod j (/ width x-count)) (/ width x-count) imag-min imag-max))
                     (cp (complex rp ip) (+ (* cp cp) cc))
                     (iter 0 (incf iter)))
                    ((or (>= iter iterations) (> (abs cp) 4.0)) iter)
@@ -87,6 +92,7 @@
                 )))
         (declare (type fixnum iters))
         (multiple-value-call #'set-pixel-png png i j (new-colors iters iterations i j width height))))))
+
 
 (defun make-fft-julia (&key
                             (cs)
