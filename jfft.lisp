@@ -13,9 +13,9 @@
 (declaim (ftype (function
                  (fixnum (simple-array (unsigned-byte 8)) (simple-array (complex double-float)) fixnum fixnum fixnum fixnum double-float double-float double-float double-float fixnum))
                 draw-fft-julia-line))
-         
+
 (declaim (inline j-map-val set-pixel-ong black-and-white draw-fft-julia-line smooth-colors))
-                 
+
 (defun j-map-val (x width xmin xmax)
   "Map a value from the range 0,width to the range xmin,xmax"
   (declare (type fixnum x width))
@@ -55,18 +55,13 @@
                 (truncate (* 13 rem))
                 (truncate (+ (* 127 (cos (* pi tval))) 127))))))
 
-(defun draw-fft-julia-line (i png cs x-count y-count width height real-min real-max imag-min imag-max iterations)
+(defun draw-fft-julia-line (i png mapping cs x-count y-count width height real-min real-max imag-min imag-max iterations)
   (declare
-           (type fixnum i width height iterations)
-           (type double-float real-min real-max imag-min imag-max)
-           (type (simple-array (unsigned-byte 8)) png)
-           (type (simple-array (complex double-float)) cs))
+   (type fixnum i width height iterations)
+   (type double-float real-min real-max imag-min imag-max)
+   (type (simple-array (unsigned-byte 8)) png)
+   (type (simple-array (complex double-float)) cs))
   (let* (
-                    
-         ;; (mapping #(16 15 14 13 12 23
-         ;;            17  4  3  2 11 22
-         ;;            18  5  0  1 10 21
-         ;;            19  6  7  8  9 20))
          (imag-c-idx (truncate (* y-count (/ i height))))
          (sub-image-height (truncate (/ height y-count)))
          (imag-value (j-map-val (mod i sub-image-height) sub-image-height real-min real-max))
@@ -78,34 +73,42 @@
                (type double-float imag-value))
       
       (let* ((real-c-idx (truncate (* x-count (/ j width))))
-             (this-c (aref cs (+ (* x-count imag-c-idx) real-c-idx)))
+             (this-c (aref cs (aref mapping (+ (* x-count imag-c-idx) real-c-idx))))
+             (max-iterations (if (= #C(0.0 0.0) this-c)
+                                 (/ iterations 3)
+                                 iterations))
              (sub-image-width (truncate (/ width x-count)))
              (iters
               (do* ((real-value (j-map-val (mod j sub-image-width) sub-image-width imag-min imag-max))
-                    (z (complex real-value imag-value) (+ (* z z) this-c))
-                    (iter 0 (incf iter)))
-                   ((or (>= iter iterations) (> (abs z) 4.0)) iter)
+                    (z          (complex real-value imag-value)
+                                (+ (* z z) this-c))
+                    (iter       0
+                                (incf iter)))
+                   ((or (>= iter max-iterations)
+                        (> (abs z) 4.0)) iter)
                 (declare (type fixnum iter)
                          (type (complex double-float) z)
-                         
                          (type double-float real-value)
-                         (dynamic-extent iter))
-                )))
+                         (dynamic-extent iter)))))
         (declare (type fixnum iters))
-        (multiple-value-call #'set-pixel-png png i j (new-colors iters iterations i j width height))))))
+        (multiple-value-call #'set-pixel-png png i j (new-colors iters max-iterations i j width height))))))
 
 
 (defun make-fft-julia (&key
-                            (cs)
-                            (file-name)
+                         (cs)
+                         (file-name)
                          (width 800) (height 800)
-                         (x-count x-count)
-                         (y-count y-count)
-
-                            (real-min -2.0) (real-max 2.0)
-                            (imag-min -2.0) (imag-max 2.0)
-                            (iterations 120)
-                            (thread-count 8))
+                         (x-count 6)
+                         (y-count 5)
+                         (mapping #(20 21 22 23 24 25
+                                    19  6  7  8  9 26
+                                    18  5  0  1 10 27
+                                    17  4  3  2 11 28
+                                    16 15 14 13 12 29))
+                         (real-min -2.0) (real-max 2.0)
+                         (imag-min -2.0) (imag-max 2.0)
+                         (iterations 120)
+                         (thread-count 4))
   "Generate a Mandelbrot Set fractal and save to the file name given.  The portion of the set drawn is given by xmin,xmax and ymin,ymax."
   (declare (type fixnum width height iterations thread-count)
            (type string file-name)
@@ -114,7 +117,16 @@
 
   (ensure-directories-exist file-name)
   (let* ((img (png:make-image height width 3 8))
-         (wq (wq:create-work-queue (rcurry #'draw-fft-julia-line img cs x-count y-count width height real-min real-max imag-min imag-max iterations) thread-count)))
+         (wq (wq:create-work-queue (rcurry #'draw-fft-julia-line
+                                           img
+                                           mapping
+                                           cs
+                                           x-count y-count
+                                           width height
+                                           real-min real-max
+                                           imag-min imag-max
+                                           iterations)
+                                   thread-count)))
 
     (dotimes (i height)
       (declare (type fixnum i))
@@ -126,31 +138,33 @@
       (png:encode img output))))
 
 (defun fft-julia-sets (&key
-                 (mp3-file-name)
-                 (output-directory "/Users/jeremiahlarocco/images/fractals/julia-animation/")
-                 (start-point #C(0.41520945078498014 0.374594080698711))
-                 (width 800)
-                 (height 800)
+                         (mp3-file-name)
+                         (output-directory "/Users/jeremiahlarocco/images/fractals/julia-animation/")
+                         (width 800)
+                         (height 800)
 
-                 (iterations 120)
+                         (iterations 120)
 
                          (fps 30)
-                 (thread-count 4)
-                 (fft-window-size 64)
-                         (x-count 4)
-                         (y-count 4)
-                 (change-direction-prob 0.005)
+                         (thread-count 4)
+                         (fft-window-size 128)
 
-                 (max-frames nil)
-                 (max-duration nil)
-                            (real-min -2.0) (real-max 2.0)
-                            (imag-min -2.0) (imag-max 2.0)
-)
+                         (x-count 6)
+                         (y-count 5)
+                         (mapping #(20 21 22 23 24 25
+                                    19  6  7  8  9 26
+                                    18  5  0  1 10 27
+                                    17  4  3  2 11 28
+                                    16 15 14 13 12 29))
+
+                         (max-frames nil)
+                         (max-duration nil)
+                         (real-min -2.0) (real-max 2.0)
+                         (imag-min -2.0) (imag-max 2.0)
+                         )
   
   (declare (type fixnum width height frame-count iterations thread-count)
-
            (type simple-string output-directory mp3-file-name)
-           (type (complex double-float) start-point)
            (type double-float real-min real-max imag-min imag-max)
            )
   (let* (
@@ -187,15 +201,16 @@
                (right-fft-data (bordeaux-fft:windowed-fft (mp3-file-right-channel the-mp3) win-center fft-window-size)))
 
           (make-fft-julia :file-name output-file-name
-                             :width width :height height
-                             :cs left-fft-data
-                             :x-count x-count
-                             :y-count y-count
-                             :real-min real-min
-                             :real-max real-max
-                             :real-min imag-min
-                             :imag-max imag-max
+                          :width width :height height
+                          :cs left-fft-data
+                          :x-count x-count
+                          :y-count y-count
+                          :mapping mapping
+                          :real-min real-min
+                          :real-max real-max
+                          :real-min imag-min
+                          :imag-max imag-max
 
-                             :iterations iterations
-                             :thread-count thread-count)))
+                          :iterations iterations
+                          :thread-count thread-count)))
       (format outf ")~%"))))
