@@ -1,6 +1,6 @@
-;;;; radial-julia.lisp
+;;;; jfft.lisp
 ;;;;
-;;;; Copyright (c) 2018 Jeremiah LaRocco <jeremiah.larocco@gmail.com>
+;;;; Copyright (c) 2018 Jeremiah LaRocco <jeremiah_larocco@fastmail.com>
 
 (in-package #:jfft)
 
@@ -17,6 +17,7 @@
 
 (declaim (ftype (function (fixnum        ;; Row index
                            (simple-array (unsigned-byte 8))  ;; png image
+                           simple-array  ;; Index map
                            (simple-array (complex double-float)) ;; complex constants from FFT data
                            fixnum        ;; # of images in X direction
                            fixnum        ;; # of images in Y direction
@@ -190,7 +191,7 @@
                          (imag-min -2.0) (imag-max 2.0)
                          )
   "Generate an animated grid of Julia Set images."
-  (declare (type fixnum width height frame-count iterations thread-count)
+  (declare (type fixnum width height iterations thread-count)
            (type simple-string output-directory mp3-file-name)
            (type double-float real-min real-max imag-min imag-max)
            )
@@ -202,8 +203,6 @@
          (description-file-name (format nil "~adescription.lisp" real-dir-name))
 
          (the-mp3 (read-mp3-file mp3-file-name))
-         (real-dir 1.0)
-         (imag-dir 1.0)
          (song-duration (mp3-file-duration-in-seconds the-mp3))
          (total-frames (if max-frames
                            max-frames
@@ -225,8 +224,9 @@
                                               (round (/ fft-window-size 2))))))
                
                (left-fft-data (bordeaux-fft:windowed-fft (mp3-file-left-channel the-mp3) win-center fft-window-size))
-               (right-fft-data (bordeaux-fft:windowed-fft (mp3-file-right-channel the-mp3) win-center fft-window-size)))
-
+               ;; (right-fft-data (bordeaux-fft:windowed-fft (mp3-file-right-channel the-mp3) win-center fft-window-size))
+               )
+          (format outf "~a~%" left-fft-data)
           (make-fft-julia-sets :file-name output-file-name
                           :width width :height height
                           :cs left-fft-data

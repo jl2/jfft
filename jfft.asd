@@ -1,10 +1,10 @@
-;;;; radial-julia.asd
+;;;; jfft.asd
 ;;;;
-;;;; Copyright (c) 2018 Jeremiah LaRocco <jeremiah.larocco@gmail.com>
+;;;; Copyright (c) 2018 Jeremiah LaRocco <jeremiah_larocco@fastmail.com>
 
 (asdf:defsystem #:jfft
-  :description "Describe radial-julia here"
-  :author "Jeremiah LaRocco <jeremiah.larocco@gmail.com>"
+  :description "Animated visualization of fast fourier transforms."
+  :author "Jeremiah LaRocco <jeremiah_larocco@fastmail.com>"
   :license "ISC"
   :depends-on (#:png
                #:alexandria

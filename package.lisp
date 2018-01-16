@@ -1,13 +1,10 @@
 ;;;; package.lisp
 ;;;;
-;;;; Copyright (c) 2018 Jeremiah LaRocco <jeremiah.larocco@gmail.com>
+;;;; Copyright (c) 2018 Jeremiah LaRocco <jeremiah_larocco@fastmail.com>
 
 (defpackage #:jfft
-  (:nicknames #:jf)
   (:use #:cl #:alexandria #:anim-utils)
   (:export
-   #:make-julia-set
-   #:make-julia-set-animation
-   #:fft-julia-sets
-   ))
+   #:make-fft-julia-sets
+   #:fft-julia-sets))
 
